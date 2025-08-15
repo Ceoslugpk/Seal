@@ -134,7 +134,11 @@ private const val TAG = "VideoListPage"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VideoListPage(viewModel: VideoListViewModel = koinViewModel(), onNavigateBack: () -> Unit) {
+fun VideoListPage(
+    viewModel: VideoListViewModel = koinViewModel(),
+    onNavigateBack: () -> Unit,
+    onNavigateToPlayer: (String, Boolean) -> Unit
+) {
     val viewState by viewModel.stateFlow.collectAsStateWithLifecycle()
     val fullVideoList by viewModel.videoListFlow.collectAsStateWithLifecycle(emptyList())
     val searchedVideoList by
@@ -488,11 +492,8 @@ fun VideoListPage(viewModel: VideoListViewModel = koinViewModel(), onNavigateBac
                                     else selectedItemIds.add(id)
                                 },
                                 onClick = {
-                                    FileUtil.openFile(path = videoPath) {
-                                        ToastUtil.makeToastSuspend(
-                                            App.context.getString(R.string.file_unavailable)
-                                        )
-                                    }
+                                    val isAudio = videoPath.contains(Regex(AUDIO_REGEX))
+                                    onNavigateToPlayer(videoPath, isAudio)
                                 },
                                 onLongClick = {
                                     isSelectEnabled = true

@@ -65,6 +65,8 @@ import com.junkfood.seal.ui.page.settings.network.CookiesViewModel
 import com.junkfood.seal.ui.page.settings.network.NetworkPreferences
 import com.junkfood.seal.ui.page.settings.network.WebViewPage
 import com.junkfood.seal.ui.page.settings.troubleshooting.TroubleShootingPage
+import com.junkfood.seal.ui.page.player.AudioPlayer
+import com.junkfood.seal.ui.page.player.VideoPlayer
 import com.junkfood.seal.ui.page.videolist.VideoListPage
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -152,7 +154,41 @@ fun AppEntry(dialogViewModel: DownloadDialogViewModel) {
                         },
                     )
                 }
-                animatedComposable(Route.DOWNLOADS) { VideoListPage { onNavigateBack() } }
+                animatedComposable(Route.DOWNLOADS) {
+                    VideoListPage(
+                        onNavigateBack = { onNavigateBack() },
+                        onNavigateToPlayer = { path, isAudio ->
+                            val route = if (isAudio) {
+                                Route.AUDIO_PLAYER.replace("{${Route.AUDIO_PATH}}", path)
+                            } else {
+                                Route.VIDEO_PLAYER.replace("{${Route.VIDEO_PATH}}", path)
+                            }
+                            navController.navigate(route)
+                        }
+                    )
+                }
+                slideInVerticallyComposable(
+                    Route.VIDEO_PLAYER arg Route.VIDEO_PATH,
+                    arguments = listOf(navArgument(Route.VIDEO_PATH) {
+                        type = NavType.StringType
+                    })
+                ) {
+                    VideoPlayer(
+                        videoPath = it.arguments?.getString(Route.VIDEO_PATH) ?: "",
+                        onNavigateBack = onNavigateBack
+                    )
+                }
+                slideInVerticallyComposable(
+                    Route.AUDIO_PLAYER arg Route.AUDIO_PATH,
+                    arguments = listOf(navArgument(Route.AUDIO_PATH) {
+                        type = NavType.StringType
+                    })
+                ) {
+                    AudioPlayer(
+                        audioPath = it.arguments?.getString(Route.AUDIO_PATH) ?: "",
+                        onNavigateBack = onNavigateBack
+                    )
+                }
                 animatedComposableVariant(Route.TASK_LIST) {
                     TaskListPage(
                         onNavigateBack = onNavigateBack,

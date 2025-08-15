@@ -3,6 +3,7 @@ package com.junkfood.seal.ui.common
 object Route {
 
     const val HOME = "home"
+    const val VIDEO_PLAYER = "video_player"
     const val DOWNLOADS = "download_history"
     const val PLAYLIST = "playlist"
     const val SETTINGS = "settings"
@@ -34,6 +35,9 @@ object Route {
 
     const val TASK_HASHCODE = "task_hashcode"
     const val TEMPLATE_ID = "template_id"
+    const val VIDEO_PATH = "video_path"
+    const val AUDIO_PLAYER = "audio_player"
+    const val AUDIO_PATH = "audio_path"
 }
 
 infix fun String.arg(arg: String) = "$this/{$arg}"

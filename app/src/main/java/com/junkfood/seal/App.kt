@@ -69,6 +69,7 @@ class App : Application() {
                     viewModel { HomePageViewModel() }
                     viewModel { CookiesViewModel() }
                     viewModel { VideoListViewModel() }
+                    viewModel { PlayerViewModel() }
                 }
             )
         }
