@@ -68,6 +68,8 @@ import com.junkfood.seal.ui.page.settings.troubleshooting.TroubleShootingPage
 import com.junkfood.seal.ui.page.player.AudioPlayer
 import com.junkfood.seal.ui.page.player.VideoPlayer
 import com.junkfood.seal.ui.page.videolist.VideoListPage
+import java.net.URLDecoder
+import java.net.URLEncoder
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
@@ -158,10 +160,11 @@ fun AppEntry(dialogViewModel: DownloadDialogViewModel) {
                     VideoListPage(
                         onNavigateBack = { onNavigateBack() },
                         onNavigateToPlayer = { path, isAudio ->
+                            val encodedPath = URLEncoder.encode(path, "UTF-8")
                             val route = if (isAudio) {
-                                Route.AUDIO_PLAYER.replace("{${Route.AUDIO_PATH}}", path)
+                                "${Route.AUDIO_PLAYER}/$encodedPath"
                             } else {
-                                Route.VIDEO_PLAYER.replace("{${Route.VIDEO_PATH}}", path)
+                                "${Route.VIDEO_PLAYER}/$encodedPath"
                             }
                             navController.navigate(route)
                         }
@@ -174,7 +177,7 @@ fun AppEntry(dialogViewModel: DownloadDialogViewModel) {
                     })
                 ) {
                     VideoPlayer(
-                        videoPath = it.arguments?.getString(Route.VIDEO_PATH) ?: "",
+                        videoPath = it.arguments?.getString(Route.VIDEO_PATH)?.let { URLDecoder.decode(it, "UTF-8") } ?: "",
                         onNavigateBack = onNavigateBack
                     )
                 }
@@ -185,7 +188,7 @@ fun AppEntry(dialogViewModel: DownloadDialogViewModel) {
                     })
                 ) {
                     AudioPlayer(
-                        audioPath = it.arguments?.getString(Route.AUDIO_PATH) ?: "",
+                        audioPath = it.arguments?.getString(Route.AUDIO_PATH)?.let { URLDecoder.decode(it, "UTF-8") } ?: "",
                         onNavigateBack = onNavigateBack
                     )
                 }
