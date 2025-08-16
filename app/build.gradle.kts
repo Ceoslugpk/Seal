@@ -1,6 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
 import com.android.build.api.variant.FilterConfiguration
+import org.gradle.api.JavaVersion
 import java.io.FileInputStream
 import java.util.Properties
 
@@ -143,7 +144,14 @@ android {
         }
     }
 
-    kotlinOptions { freeCompilerArgs = freeCompilerArgs + "-opt-in=kotlin.RequiresOptIn" }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs = freeCompilerArgs + "-opt-in=kotlin.RequiresOptIn"
+    }
 
     packaging {
         resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
@@ -156,7 +164,7 @@ android {
 
 ktfmt { kotlinLangStyle() }
 
-kotlin { jvmToolchain(21) }
+kotlin { jvmToolchain(17) }
 
 dependencies {
     implementation(project(":color"))
