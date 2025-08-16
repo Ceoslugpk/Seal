@@ -34,8 +34,23 @@ class PlayerViewModel(
     private val _isAudioOnly = MutableStateFlow(false)
     val isAudioOnly: StateFlow<Boolean> = _isAudioOnly
 
+    private val _isLocked = MutableStateFlow(false)
+    val isLocked: StateFlow<Boolean> = _isLocked
+
     private val _mediaPlayer = MutableStateFlow<MediaPlayer?>(null)
     val mediaPlayer: StateFlow<MediaPlayer?> = _mediaPlayer
+
+    private val _subtitleTracks = MutableStateFlow<List<MediaPlayer.TrackDescription>>(emptyList())
+    val subtitleTracks: StateFlow<List<MediaPlayer.TrackDescription>> = _subtitleTracks
+
+    private val _selectedSubtitleTrack = MutableStateFlow<MediaPlayer.TrackDescription?>(null)
+    val selectedSubtitleTrack: StateFlow<MediaPlayer.TrackDescription?> = _selectedSubtitleTrack
+
+    private val _audioTracks = MutableStateFlow<List<MediaPlayer.TrackDescription>>(emptyList())
+    val audioTracks: StateFlow<List<MediaPlayer.TrackDescription>> = _audioTracks
+
+    private val _selectedAudioTrack = MutableStateFlow<MediaPlayer.TrackDescription?>(null)
+    val selectedAudioTrack: StateFlow<MediaPlayer.TrackDescription?> = _selectedAudioTrack
 
     private lateinit var libVLC: LibVLC
 
@@ -49,6 +64,10 @@ class PlayerViewModel(
             _mediaPlayer.value = player
             player.play()
             _duration.value = player.length
+            _subtitleTracks.value = player.spuTracks?.toList() ?: emptyList()
+            _selectedSubtitleTrack.value = player.spuTracks?.firstOrNull { it.id == player.spuTrack }
+            _audioTracks.value = player.audioTracks?.toList() ?: emptyList()
+            _selectedAudioTrack.value = player.audioTracks?.firstOrNull { it.id == player.audioTrack }
             viewModelScope.launch {
                 while (true) {
                     _currentTime.value = player.time
@@ -56,6 +75,16 @@ class PlayerViewModel(
                 }
             }
         }
+    }
+
+    fun selectSubtitleTrack(track: MediaPlayer.TrackDescription) {
+        _mediaPlayer.value?.setSpuTrack(track.id)
+        _selectedSubtitleTrack.value = track
+    }
+
+    fun selectAudioTrack(track: MediaPlayer.TrackDescription) {
+        _mediaPlayer.value?.setAudioTrack(track.id)
+        _selectedAudioTrack.value = track
     }
 
     fun togglePlayPause() {
@@ -79,6 +108,18 @@ class PlayerViewModel(
             val newTime = player.time + value
             player.time = newTime.coerceIn(0, player.length)
         }
+    }
+
+    fun forward() {
+        seekTo(10000)
+    }
+
+    fun rewind() {
+        seekTo(-10000)
+    }
+
+    fun toggleLock() {
+        _isLocked.value = !_isLocked.value
     }
 
     fun changeVolume(value: Int) {

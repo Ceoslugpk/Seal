@@ -77,6 +77,61 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun `forward should seek forward by 10 seconds`() = runTest {
+        viewModel.initializePlayer(context, "fake_path")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        whenever(mediaPlayer.time).thenReturn(5000L)
+        whenever(mediaPlayer.length).thenReturn(20000L)
+        viewModel.forward()
+        verify(mediaPlayer).time = 15000L
+    }
+
+    @Test
+    fun `rewind should seek backward by 10 seconds`() = runTest {
+        viewModel.initializePlayer(context, "fake_path")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        whenever(mediaPlayer.time).thenReturn(15000L)
+        whenever(mediaPlayer.length).thenReturn(20000L)
+        viewModel.rewind()
+        verify(mediaPlayer).time = 5000L
+    }
+
+    @Test
+    fun `toggleLock should toggle isLocked state`() = runTest {
+        viewModel.isLocked.test {
+            assertEquals(false, awaitItem())
+            viewModel.toggleLock()
+            assertEquals(true, awaitItem())
+            viewModel.toggleLock()
+            assertEquals(false, awaitItem())
+        }
+    }
+
+    @Test
+    fun `selectSubtitleTrack should update subtitle track`() = runTest {
+        viewModel.initializePlayer(context, "fake_path")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val track = MediaPlayer.TrackDescription(1, 0, "English")
+        viewModel.selectSubtitleTrack(track)
+        verify(mediaPlayer).setSpuTrack(1)
+        assertEquals(track, viewModel.selectedSubtitleTrack.value)
+    }
+
+    @Test
+    fun `selectAudioTrack should update audio track`() = runTest {
+        viewModel.initializePlayer(context, "fake_path")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val track = MediaPlayer.TrackDescription(1, 0, "English")
+        viewModel.selectAudioTrack(track)
+        verify(mediaPlayer).setAudioTrack(1)
+        assertEquals(track, viewModel.selectedAudioTrack.value)
+    }
+
+    @Test
     fun `changeVolume should update media player volume`() = runTest {
         viewModel.initializePlayer(context, "fake_path")
         testDispatcher.scheduler.advanceUntilIdle()
