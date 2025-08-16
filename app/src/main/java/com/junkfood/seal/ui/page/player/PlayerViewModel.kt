@@ -15,7 +15,9 @@ import org.videolan.libvlc.Media
 import org.videolan.libvlc.MediaPlayer
 import java.io.File
 
-class PlayerViewModel : ViewModel() {
+class PlayerViewModel(
+    private val mediaPlayerFactory: (LibVLC) -> MediaPlayer = { MediaPlayer(it) }
+) : ViewModel() {
     private val _isPlaying = MutableStateFlow(true)
     val isPlaying: StateFlow<Boolean> = _isPlaying
 
@@ -40,7 +42,7 @@ class PlayerViewModel : ViewModel() {
     fun initializePlayer(context: Context, videoPath: String) {
         viewModelScope.launch {
             libVLC = LibVLC(context, ArrayList<String>().apply { add("--no-stats") })
-            val player = MediaPlayer(libVLC)
+            val player = mediaPlayerFactory(libVLC)
             val media = Media(libVLC, Uri.fromFile(File(videoPath)))
             player.media = media
             media.release()
@@ -114,6 +116,8 @@ class PlayerViewModel : ViewModel() {
         super.onCleared()
         _mediaPlayer.value?.stop()
         _mediaPlayer.value?.release()
-        libVLC.release()
+        if (this::libVLC.isInitialized) {
+            libVLC.release()
+        }
     }
 }
