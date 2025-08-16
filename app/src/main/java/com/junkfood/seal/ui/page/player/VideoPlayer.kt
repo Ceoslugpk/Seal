@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -33,6 +34,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.component.BackButton
 import org.koin.androidx.compose.koinViewModel
+import org.videolan.libvlc.MediaPlayer
 import org.videolan.libvlc.util.VLCVideoLayout
 import java.util.concurrent.TimeUnit
 
@@ -50,6 +52,7 @@ fun VideoPlayer(
     val duration by viewModel.duration.collectAsState()
     val playbackRate by viewModel.playbackRate.collectAsState()
     val isAudioOnly by viewModel.isAudioOnly.collectAsState()
+    val mediaPlayer by viewModel.mediaPlayer.collectAsState()
 
     LaunchedEffect(videoPath) {
         viewModel.initializePlayer(context, videoPath)
@@ -86,28 +89,37 @@ fun VideoPlayer(
                     )
                 }
             } else {
-                AndroidView(
-                    modifier = Modifier
-                        .weight(1f)
-                        .pointerInput(Unit) {
-                            detectDragGestures { change, dragAmount ->
-                                change.consume()
-                                val (x, y) = dragAmount
-                                val width = size.width
-                                if (change.position.x < width / 2) {
-                                    viewModel.changeVolume(if (y > 0) -1 else 1)
-                                } else {
-                                    viewModel.changeBrightness(activity, if (y > 0) -0.01f else 0.01f)
+                mediaPlayer?.let { player ->
+                    AndroidView(
+                        modifier = Modifier
+                            .weight(1f)
+                            .pointerInput(Unit) {
+                                detectDragGestures { change, dragAmount ->
+                                    change.consume()
+                                    val (x, y) = dragAmount
+                                    val width = size.width
+                                    if (change.position.x < width / 2) {
+                                        viewModel.changeVolume(if (y > 0) -1 else 1)
+                                    } else {
+                                        viewModel.changeBrightness(activity, if (y > 0) -0.01f else 0.01f)
+                                    }
+                                    viewModel.seekTo((x * 10).toLong())
                                 }
-                                viewModel.seekTo((x * 10).toLong())
+                            },
+                        factory = {
+                            VLCVideoLayout(context).apply {
+                                player.attachViews(this, null, false, false)
                             }
-                        },
-                    factory = {
-                        VLCVideoLayout(context).apply {
-                            viewModel.mediaPlayer.attachViews(this, null, false, false)
                         }
+                    )
+                } ?: run {
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
                     }
-                )
+                }
             }
             Row {
                 Text(text = currentTime.formatDuration())

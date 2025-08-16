@@ -32,22 +32,24 @@ class PlayerViewModel : ViewModel() {
     private val _isAudioOnly = MutableStateFlow(false)
     val isAudioOnly: StateFlow<Boolean> = _isAudioOnly
 
+    private val _mediaPlayer = MutableStateFlow<MediaPlayer?>(null)
+    val mediaPlayer: StateFlow<MediaPlayer?> = _mediaPlayer
 
     private lateinit var libVLC: LibVLC
-    lateinit var mediaPlayer: MediaPlayer
 
     fun initializePlayer(context: Context, videoPath: String) {
         viewModelScope.launch {
             libVLC = LibVLC(context, ArrayList<String>().apply { add("--no-stats") })
-            mediaPlayer = MediaPlayer(libVLC)
+            val player = MediaPlayer(libVLC)
             val media = Media(libVLC, Uri.fromFile(File(videoPath)))
-            mediaPlayer.media = media
+            player.media = media
             media.release()
-            mediaPlayer.play()
-            _duration.value = mediaPlayer.length
+            _mediaPlayer.value = player
+            player.play()
+            _duration.value = player.length
             viewModelScope.launch {
                 while (true) {
-                    _currentTime.value = mediaPlayer.time
+                    _currentTime.value = player.time
                     delay(100)
                 }
             }
@@ -55,34 +57,42 @@ class PlayerViewModel : ViewModel() {
     }
 
     fun togglePlayPause() {
-        if (mediaPlayer.isPlaying) {
-            mediaPlayer.pause()
-            _isPlaying.value = false
-        } else {
-            mediaPlayer.play()
-            _isPlaying.value = true
+        _mediaPlayer.value?.let { player ->
+            if (player.isPlaying) {
+                player.pause()
+                _isPlaying.value = false
+            } else {
+                player.play()
+                _isPlaying.value = true
+            }
         }
     }
 
     fun seek(value: Long) {
-        mediaPlayer.time = value
+        _mediaPlayer.value?.time = value
     }
 
     fun seekTo(value: Long) {
-        val newTime = mediaPlayer.time + value
-        mediaPlayer.time = newTime.coerceIn(0, mediaPlayer.length)
+        _mediaPlayer.value?.let { player ->
+            val newTime = player.time + value
+            player.time = newTime.coerceIn(0, player.length)
+        }
     }
 
     fun changeVolume(value: Int) {
-        val newVolume = mediaPlayer.volume + value
-        mediaPlayer.volume = newVolume.coerceIn(0, 100)
+        _mediaPlayer.value?.let { player ->
+            val newVolume = player.volume + value
+            player.volume = newVolume.coerceIn(0, 100)
+        }
     }
 
     fun changePlaybackRate() {
-        val currentIndex = availablePlaybackRates.indexOf(_playbackRate.value)
-        val nextIndex = (currentIndex + 1) % availablePlaybackRates.size
-        _playbackRate.value = availablePlaybackRates[nextIndex]
-        mediaPlayer.rate = _playbackRate.value
+        _mediaPlayer.value?.let { player ->
+            val currentIndex = availablePlaybackRates.indexOf(_playbackRate.value)
+            val nextIndex = (currentIndex + 1) % availablePlaybackRates.size
+            _playbackRate.value = availablePlaybackRates[nextIndex]
+            player.rate = _playbackRate.value
+        }
     }
 
     fun toggleAudioOnly() {
@@ -102,8 +112,8 @@ class PlayerViewModel : ViewModel() {
 
     override fun onCleared() {
         super.onCleared()
-        mediaPlayer.stop()
-        mediaPlayer.release()
+        _mediaPlayer.value?.stop()
+        _mediaPlayer.value?.release()
         libVLC.release()
     }
 }
