@@ -191,8 +191,9 @@ dependencies {
     implementation(libs.vlc)
 
     testImplementation(libs.junit4)
-    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockitoKotlin)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
     androidTestImplementation(libs.androidx.test.ext)
     androidTestImplementation(libs.androidx.test.espresso.core)
     implementation(libs.androidx.compose.ui.tooling)
