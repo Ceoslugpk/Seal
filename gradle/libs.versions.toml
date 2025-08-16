@@ -40,8 +40,6 @@ koinKsp = "2.0.0"
 
 ktfmt = "0.20.1"
 vlc = "3.4.1"
-mockito = "5.4.0"
-turbine = "0.13.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCore" }
@@ -115,8 +113,6 @@ youtubedl-android-aria2c = { group = "io.github.junkfood02.youtubedl-android", n
 
 mmkv = { group = "com.tencent", name = "mmkv", version.ref = "mmkv" }
 vlc = { group = "org.videolan.android", name = "libvlc-all", version.ref = "vlc" }
-mockitoKotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockito" }
-turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
