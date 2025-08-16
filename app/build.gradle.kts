@@ -175,8 +175,8 @@ dependencies {
 
     implementation(libs.koin.android)
     implementation(libs.koin.compose)
-    implementation(libs.koin.annotations)
-    ksp(libs.koin.ksp.compiler)
+    implementation(libs.koinAnnotations)
+    ksp(libs.koinKspCompiler)
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
