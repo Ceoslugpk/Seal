@@ -196,7 +196,6 @@ dependencies {
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
     implementation(libs.media3.session)
-    implementation(libs.media3.exoplayer.mediasession)
 
     testImplementation(libs.junit4)
     testImplementation(libs.mockitoKotlin)
