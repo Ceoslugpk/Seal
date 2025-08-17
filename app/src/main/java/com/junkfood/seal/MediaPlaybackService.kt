@@ -19,6 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class MediaPlaybackService : Service() {
@@ -54,10 +55,12 @@ class MediaPlaybackService : Service() {
                 val path = videoPath ?: audioPath
                 path?.let {
                     val mediaItem = MediaItem.fromUri(Uri.fromFile(File(it)))
-                    exoPlayer.setMediaItem(mediaItem)
-                    exoPlayer.prepare()
-                    exoPlayer.play()
-                    requestAudioFocus()
+                    withContext(Dispatchers.Main) {
+                        exoPlayer.setMediaItem(mediaItem)
+                        exoPlayer.prepare()
+                        exoPlayer.play()
+                        requestAudioFocus()
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
