@@ -1,44 +1,44 @@
 package com.junkfood.seal
 
 import android.media.AudioManager
+import androidx.media3.exoplayer.ExoPlayer
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import org.videolan.libvlc.MediaPlayer
 
 class AudioFocusChangeListenerTest {
 
     private lateinit var listener: AudioFocusChangeListener
-    private val mediaPlayer: MediaPlayer = mock()
+    private val exoPlayer: ExoPlayer = mock()
 
     @Before
     fun setUp() {
-        listener = AudioFocusChangeListener(mediaPlayer)
+        listener = AudioFocusChangeListener(exoPlayer)
     }
 
     @Test
     fun `onAudioFocusChange with AUDIOFOCUS_GAIN should play`() {
         listener.onAudioFocusChange(AudioManager.AUDIOFOCUS_GAIN)
-        verify(mediaPlayer).volume = 100
-        verify(mediaPlayer).play()
+        verify(exoPlayer).volume = 1.0f
+        verify(exoPlayer).play()
     }
 
     @Test
     fun `onAudioFocusChange with AUDIOFOCUS_LOSS should stop`() {
         listener.onAudioFocusChange(AudioManager.AUDIOFOCUS_LOSS)
-        verify(mediaPlayer).stop()
+        verify(exoPlayer).stop()
     }
 
     @Test
     fun `onAudioFocusChange with AUDIOFOCUS_LOSS_TRANSIENT should pause`() {
         listener.onAudioFocusChange(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT)
-        verify(mediaPlayer).pause()
+        verify(exoPlayer).pause()
     }
 
     @Test
     fun `onAudioFocusChange with AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK should lower volume`() {
         listener.onAudioFocusChange(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK)
-        verify(mediaPlayer).volume = 30
+        verify(exoPlayer).volume = 0.3f
     }
 }
