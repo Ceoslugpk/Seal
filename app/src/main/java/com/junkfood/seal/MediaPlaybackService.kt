@@ -13,7 +13,6 @@ import androidx.core.app.NotificationCompat
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.common.audio.AudioAttributes
 import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -47,11 +46,6 @@ class MediaPlaybackService : Service() {
         startForeground(NOTIF_ID, baseNotification("Preparing…"))
 
         player = ExoPlayer.Builder(this).build().apply {
-            val attrs = AudioAttributes.Builder()
-                .setUsage(C.USAGE_MEDIA)
-                .setContentType(C.CONTENT_TYPE_MUSIC)
-                .build()
-            setAudioAttributes(attrs, true) // handles audio focus
             setHandleAudioBecomingNoisy(true)
             addListener(object : Player.Listener {
                 override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
