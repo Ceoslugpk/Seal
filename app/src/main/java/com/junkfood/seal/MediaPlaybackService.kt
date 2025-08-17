@@ -11,25 +11,22 @@ import android.net.Uri
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
-import android.support.v4.media.session.MediaSessionCompat
 import androidx.core.app.NotificationCompat
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import org.videolan.libvlc.LibVLC
-import org.videolan.libvlc.Media
-import org.videolan.libvlc.MediaPlayer
 import java.io.File
 
 class MediaPlaybackService : Service() {
 
-    private lateinit var libVLC: LibVLC
-    private lateinit var mediaPlayer: MediaPlayer
-    private lateinit var mediaSession: MediaSessionCompat
+    lateinit var exoPlayer: ExoPlayer
+    private lateinit var mediaSession: MediaSession
     private lateinit var notificationManager: NotificationManager
     private lateinit var audioManager: AudioManager
-    private lateinit var audioFocusChangeListener: AudioFocusChangeListener
 
     private val binder = LocalBinder()
     private val serviceScope = CoroutineScope(Dispatchers.IO)
@@ -40,13 +37,10 @@ class MediaPlaybackService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        libVLC = LibVLC(this, ArrayList<String>().apply { add("--no-stats") })
-        mediaPlayer = MediaPlayer(libVLC)
-        mediaSession = MediaSessionCompat(this, "MediaPlaybackService")
-        mediaSession.setCallback(MediaSessionCallback(mediaPlayer, this))
+        exoPlayer = ExoPlayer.Builder(this).build()
+        mediaSession = MediaSession.Builder(this, exoPlayer).build()
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        audioFocusChangeListener = AudioFocusChangeListener(mediaPlayer)
         createNotificationChannel()
     }
 
@@ -57,11 +51,10 @@ class MediaPlaybackService : Service() {
                 val audioPath = intent?.getStringExtra("audio_path")
                 val path = videoPath ?: audioPath
                 path?.let {
-                    val media = Media(libVLC, Uri.fromFile(File(it)))
-                    mediaPlayer.media = media
-                    media.release()
-                    mediaPlayer.play()
-                    requestAudioFocus()
+                    val mediaItem = MediaItem.fromUri(Uri.fromFile(File(it)))
+                    exoPlayer.setMediaItem(mediaItem)
+                    exoPlayer.prepare()
+                    exoPlayer.play()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -78,10 +71,8 @@ class MediaPlaybackService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        mediaPlayer.release()
-        libVLC.release()
+        exoPlayer.release()
         mediaSession.release()
-        abandonAudioFocus()
         serviceScope.cancel()
     }
 
@@ -105,18 +96,5 @@ class MediaPlaybackService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         return builder.build()
-    }
-
-    fun requestAudioFocus(): Boolean {
-        val result = audioManager.requestAudioFocus(
-            audioFocusChangeListener,
-            AudioManager.STREAM_MUSIC,
-            AudioManager.AUDIOFOCUS_GAIN
-        )
-        return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
-    }
-
-    fun abandonAudioFocus() {
-        audioManager.abandonAudioFocus(audioFocusChangeListener)
     }
 }

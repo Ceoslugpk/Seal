@@ -8,42 +8,16 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import android.view.WindowManager
 import androidx.lifecycle.ViewModel
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
 import com.junkfood.seal.MediaPlaybackService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import org.videolan.libvlc.MediaPlayer
 
 class PlayerViewModel() : ViewModel() {
-    private val _isPlaying = MutableStateFlow(true)
-    val isPlaying: StateFlow<Boolean> = _isPlaying
 
-    private val _currentTime = MutableStateFlow(0L)
-    val currentTime: StateFlow<Long> = _currentTime
-
-    private val _duration = MutableStateFlow(0L)
-    val duration: StateFlow<Long> = _duration
-
-    private val _playbackRate = MutableStateFlow(1.0f)
-    val playbackRate: StateFlow<Float> = _playbackRate
-    private val availablePlaybackRates = listOf(1.0f, 1.5f, 2.0f)
-
-    private val _isAudioOnly = MutableStateFlow(false)
-    val isAudioOnly: StateFlow<Boolean> = _isAudioOnly
-
-    private val _isLocked = MutableStateFlow(false)
-    val isLocked: StateFlow<Boolean> = _isLocked
-
-    private val _subtitleTracks = MutableStateFlow<List<MediaPlayer.TrackDescription>>(emptyList())
-    val subtitleTracks: StateFlow<List<MediaPlayer.TrackDescription>> = _subtitleTracks
-
-    private val _selectedSubtitleTrack = MutableStateFlow<MediaPlayer.TrackDescription?>(null)
-    val selectedSubtitleTrack: StateFlow<MediaPlayer.TrackDescription?> = _selectedSubtitleTrack
-
-    private val _audioTracks = MutableStateFlow<List<MediaPlayer.TrackDescription>>(emptyList())
-    val audioTracks: StateFlow<List<MediaPlayer.TrackDescription>> = _audioTracks
-
-    private val _selectedAudioTrack = MutableStateFlow<MediaPlayer.TrackDescription?>(null)
-    val selectedAudioTrack: StateFlow<MediaPlayer.TrackDescription?> = _selectedAudioTrack
+    private val _exoPlayer = MutableStateFlow<ExoPlayer?>(null)
+    val exoPlayer: StateFlow<ExoPlayer?> = _exoPlayer
 
     private var mediaPlaybackService: MediaPlaybackService? = null
     private var isBound = false
@@ -52,6 +26,7 @@ class PlayerViewModel() : ViewModel() {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
             val binder = service as MediaPlaybackService.LocalBinder
             mediaPlaybackService = binder.getService()
+            _exoPlayer.value = mediaPlaybackService?.exoPlayer
             isBound = true
         }
 
@@ -73,48 +48,30 @@ class PlayerViewModel() : ViewModel() {
         }
     }
 
-    fun selectSubtitleTrack(track: MediaPlayer.TrackDescription) {
-        // TODO: call service
-    }
-
-    fun selectAudioTrack(track: MediaPlayer.TrackDescription) {
-        // TODO: call service
-    }
-
     fun togglePlayPause() {
-        // TODO: call service
+        _exoPlayer.value?.let {
+            if (it.isPlaying) {
+                it.pause()
+            } else {
+                it.play()
+            }
+        }
     }
 
-    fun seek(value: Long) {
-        // TODO: call service
+    fun seekTo(position: Long) {
+        _exoPlayer.value?.seekTo(position)
     }
 
-    fun seekTo(value: Long) {
-        // TODO: call service
+    fun seekForward() {
+        _exoPlayer.value?.seekForward()
     }
 
-    fun forward() {
-        seekTo(10000)
+    fun seekBack() {
+        _exoPlayer.value?.seekBack()
     }
 
-    fun rewind() {
-        seekTo(-10000)
-    }
-
-    fun toggleLock() {
-        _isLocked.value = !_isLocked.value
-    }
-
-    fun changeVolume(value: Int) {
-        // TODO: call service
-    }
-
-    fun changePlaybackRate() {
-        // TODO: call service
-    }
-
-    fun toggleAudioOnly() {
-        _isAudioOnly.value = !_isAudioOnly.value
+    fun setPlaybackSpeed(speed: Float) {
+        _exoPlayer.value?.setPlaybackSpeed(speed)
     }
 
     fun changeBrightness(activity: Activity, change: Float) {

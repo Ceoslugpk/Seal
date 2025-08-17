@@ -1,7 +1,6 @@
 package com.junkfood.seal.ui.page.player
 
 import android.content.Intent
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,34 +8,24 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
-import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -55,14 +44,7 @@ fun AudioPlayer(
     viewModel: PlayerViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
-    val isPlaying by viewModel.isPlaying.collectAsState()
-    val currentTime by viewModel.currentTime.collectAsState()
-    val duration by viewModel.duration.collectAsState()
-    val playbackRate by viewModel.playbackRate.collectAsState()
-    val audioTracks by viewModel.audioTracks.collectAsState()
-    val selectedAudioTrack by viewModel.selectedAudioTrack.collectAsState()
-
-    var showAudioTrackDialog by remember { mutableStateOf(false) }
+    val exoPlayer by viewModel.exoPlayer.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.bindService(context)
@@ -76,42 +58,6 @@ fun AudioPlayer(
         onDispose {
             viewModel.unbindService(context)
         }
-    }
-
-    if (showAudioTrackDialog) {
-        AlertDialog(
-            onDismissRequest = { showAudioTrackDialog = false },
-            title = { Text("Select Audio Track") },
-            text = {
-                LazyColumn {
-                    items(audioTracks) { track ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    viewModel.selectAudioTrack(track)
-                                    showAudioTrackDialog = false
-                                },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = track.id == selectedAudioTrack?.id,
-                                onClick = {
-                                    viewModel.selectAudioTrack(track)
-                                    showAudioTrackDialog = false
-                                }
-                            )
-                            Text(text = track.name)
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showAudioTrackDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
 
     Scaffold(
@@ -137,45 +83,48 @@ fun AudioPlayer(
             }
             Column {
                 Row {
-                    Text(text = currentTime.formatDuration())
-                    Slider(
-                        value = currentTime.toFloat(),
-                        onValueChange = { viewModel.seek(it.toLong()) },
-                        valueRange = 0f..duration.toFloat(),
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(text = duration.formatDuration())
+                    exoPlayer?.let {
+                        val duration = it.duration
+                        val position = it.currentPosition
+                        Text(text = position.formatDuration())
+                        Slider(
+                            value = position.toFloat(),
+                            onValueChange = { newPosition -> it.seekTo(newPosition.toLong()) },
+                            valueRange = 0f..duration.toFloat(),
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(text = duration.formatDuration())
+                    }
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = { viewModel.rewind() }) {
+                    IconButton(onClick = { exoPlayer?.seekBack() }) {
                         Icon(
                             imageVector = Icons.Default.FastRewind,
                             contentDescription = "Rewind"
                         )
                     }
-                    IconButton(onClick = { viewModel.togglePlayPause() }) {
+                    IconButton(onClick = {
+                        exoPlayer?.let {
+                            if (it.isPlaying) {
+                                it.pause()
+                            } else {
+                                it.play()
+                            }
+                        }
+                    }) {
                         Icon(
-                            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            imageVector = if (exoPlayer?.isPlaying == true) Icons.Default.Pause else Icons.Default.PlayArrow,
                             contentDescription = "Play/Pause"
                         )
                     }
-                    IconButton(onClick = { viewModel.forward() }) {
+                    IconButton(onClick = { exoPlayer?.seekForward() }) {
                         Icon(
                             imageVector = Icons.Default.FastForward,
                             contentDescription = "Forward"
-                        )
-                    }
-                    Button(onClick = { viewModel.changePlaybackRate() }) {
-                        Text(text = "${playbackRate}x")
-                    }
-                    IconButton(onClick = { showAudioTrackDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Default.GraphicEq,
-                            contentDescription = "Audio Tracks"
                         )
                     }
                 }
