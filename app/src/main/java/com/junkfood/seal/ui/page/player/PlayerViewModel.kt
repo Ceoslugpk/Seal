@@ -59,7 +59,7 @@ class PlayerViewModel(
         viewModelScope.launch {
             libVLC = LibVLC(context, ArrayList<String>().apply { add("--no-stats") })
             val player = mediaPlayerFactory(libVLC)
-            player.setEventListener(PlayerEventListener(this))
+            player.setEventListener(PlayerEventListener(this@PlayerViewModel))
             val media = Media(libVLC, Uri.fromFile(File(videoPath)))
             player.media = media
             media.release()
