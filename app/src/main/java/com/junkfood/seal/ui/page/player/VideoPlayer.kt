@@ -1,6 +1,5 @@
 package com.junkfood.seal.ui.page.player
 
-import android.app.Activity
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
