@@ -52,15 +52,19 @@ class MediaPlaybackService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         serviceScope.launch {
-            val videoPath = intent?.getStringExtra("video_path")
-            val audioPath = intent?.getStringExtra("audio_path")
-            val path = videoPath ?: audioPath
-            path?.let {
-                val media = Media(libVLC, Uri.fromFile(File(it)))
-                mediaPlayer.media = media
-                media.release()
-                mediaPlayer.play()
-                requestAudioFocus()
+            try {
+                val videoPath = intent?.getStringExtra("video_path")
+                val audioPath = intent?.getStringExtra("audio_path")
+                val path = videoPath ?: audioPath
+                path?.let {
+                    val media = Media(libVLC, Uri.fromFile(File(it)))
+                    mediaPlayer.media = media
+                    media.release()
+                    mediaPlayer.play()
+                    requestAudioFocus()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 
