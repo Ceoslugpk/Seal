@@ -17,6 +17,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -24,14 +25,15 @@ import java.io.File
 
 class MediaPlaybackService : Service() {
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     lateinit var exoPlayer: ExoPlayer
     private lateinit var mediaSession: MediaSession
     private lateinit var notificationManager: NotificationManager
     private lateinit var audioManager: AudioManager
     private lateinit var audioFocusChangeListener: AudioFocusChangeListener
+    private var started = false
 
     private val binder = LocalBinder()
-    private val serviceScope = CoroutineScope(Dispatchers.IO)
 
     inner class LocalBinder : Binder() {
         fun getService(): MediaPlaybackService = this@MediaPlaybackService
@@ -48,26 +50,27 @@ class MediaPlaybackService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        serviceScope.launch {
-            try {
-                val videoPath = intent?.getStringExtra("video_path")
-                val audioPath = intent?.getStringExtra("audio_path")
-                val path = videoPath ?: audioPath
-                path?.let {
-                    val mediaItem = MediaItem.fromUri(Uri.fromFile(File(it)))
-                    withContext(Dispatchers.Main) {
-                        exoPlayer.setMediaItem(mediaItem)
-                        exoPlayer.prepare()
-                        exoPlayer.play()
-                        requestAudioFocus()
-                    }
+        if (!started) {
+            started = true
+            startForeground(1, buildNotification())
+        }
+
+        val videoPath = intent?.getStringExtra("video_path")
+        val audioPath = intent?.getStringExtra("audio_path")
+        val path = videoPath ?: audioPath
+
+        scope.launch {
+            path?.let {
+                val mediaItem = withContext(Dispatchers.IO) {
+                    MediaItem.fromUri(Uri.fromFile(File(it)))
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
+                exoPlayer.setMediaItem(mediaItem)
+                exoPlayer.prepare()
+                exoPlayer.play()
+                requestAudioFocus()
             }
         }
 
-        startForeground(1, buildNotification())
         return START_STICKY
     }
 
@@ -77,10 +80,10 @@ class MediaPlaybackService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        scope.cancel()
         exoPlayer.release()
         mediaSession.release()
         abandonAudioFocus()
-        serviceScope.cancel()
     }
 
     private fun createNotificationChannel() {
