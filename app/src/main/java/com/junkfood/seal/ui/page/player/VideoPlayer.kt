@@ -1,6 +1,7 @@
 package com.junkfood.seal.ui.page.player
 
 import android.app.Activity
+import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -40,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -54,6 +56,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.junkfood.seal.MediaPlaybackService
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.component.BackButton
 import kotlinx.coroutines.delay
@@ -77,7 +80,6 @@ fun VideoPlayer(
     val playbackRate by viewModel.playbackRate.collectAsState()
     val isAudioOnly by viewModel.isAudioOnly.collectAsState()
     val isLocked by viewModel.isLocked.collectAsState()
-    val mediaPlayer by viewModel.mediaPlayer.collectAsState()
     val subtitleTracks by viewModel.subtitleTracks.collectAsState()
     val selectedSubtitleTrack by viewModel.selectedSubtitleTrack.collectAsState()
     val audioTracks by viewModel.audioTracks.collectAsState()
@@ -87,8 +89,18 @@ fun VideoPlayer(
     var showSubtitleDialog by remember { mutableStateOf(false) }
     var showAudioTrackDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(videoPath) {
-        viewModel.initializePlayer(context, videoPath)
+    LaunchedEffect(Unit) {
+        viewModel.bindService(context)
+        Intent(context, MediaPlaybackService::class.java).also { intent ->
+            intent.putExtra("video_path", videoPath)
+            context.startService(intent)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.unbindService(context)
+        }
     }
 
     LaunchedEffect(controlsVisible, isLocked) {
@@ -210,22 +222,14 @@ fun VideoPlayer(
                     )
                 }
             } else {
-                mediaPlayer?.let { player ->
-                    AndroidView(
-                        modifier = Modifier.fillMaxSize(),
-                        factory = {
-                            VLCVideoLayout(context).apply {
-                                player.attachViews(this, null, false, false)
-                            }
-                        }
-                    )
-                } ?: run {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                // AndroidView for video playback is now managed by the service
+                // The UI needs to get the SurfaceView from the service
+                // This will be implemented in a later step
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
             }
 

@@ -1,24 +1,19 @@
 package com.junkfood.seal.ui.page.player
 
 import android.app.Activity
+import android.content.ComponentName
 import android.content.Context
-import android.net.Uri
+import android.content.Intent
+import android.content.ServiceConnection
+import android.os.IBinder
 import android.view.WindowManager
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
+import com.junkfood.seal.MediaPlaybackService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import org.videolan.libvlc.LibVLC
-import org.videolan.libvlc.Media
 import org.videolan.libvlc.MediaPlayer
-import java.io.File
-import java.lang.ref.WeakReference
 
-class PlayerViewModel(
-    private val mediaPlayerFactory: (LibVLC) -> MediaPlayer = { MediaPlayer(it) }
-) : ViewModel() {
+class PlayerViewModel() : ViewModel() {
     private val _isPlaying = MutableStateFlow(true)
     val isPlaying: StateFlow<Boolean> = _isPlaying
 
@@ -38,9 +33,6 @@ class PlayerViewModel(
     private val _isLocked = MutableStateFlow(false)
     val isLocked: StateFlow<Boolean> = _isLocked
 
-    private val _mediaPlayer = MutableStateFlow<MediaPlayer?>(null)
-    val mediaPlayer: StateFlow<MediaPlayer?> = _mediaPlayer
-
     private val _subtitleTracks = MutableStateFlow<List<MediaPlayer.TrackDescription>>(emptyList())
     val subtitleTracks: StateFlow<List<MediaPlayer.TrackDescription>> = _subtitleTracks
 
@@ -53,71 +45,52 @@ class PlayerViewModel(
     private val _selectedAudioTrack = MutableStateFlow<MediaPlayer.TrackDescription?>(null)
     val selectedAudioTrack: StateFlow<MediaPlayer.TrackDescription?> = _selectedAudioTrack
 
-    private lateinit var libVLC: LibVLC
+    private var mediaPlaybackService: MediaPlaybackService? = null
+    private var isBound = false
 
-    fun initializePlayer(context: Context, videoPath: String) {
-        viewModelScope.launch {
-            libVLC = LibVLC(context, ArrayList<String>().apply { add("--no-stats") })
-            val player = mediaPlayerFactory(libVLC)
-            player.setEventListener(PlayerEventListener(this@PlayerViewModel))
-            val media = Media(libVLC, Uri.fromFile(File(videoPath)))
-            player.media = media
-            media.release()
-            _mediaPlayer.value = player
-            player.play()
-            viewModelScope.launch {
-                while (true) {
-                    _currentTime.value = player.time
-                    delay(100)
-                }
-            }
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            val binder = service as MediaPlaybackService.LocalBinder
+            mediaPlaybackService = binder.getService()
+            isBound = true
+        }
+
+        override fun onServiceDisconnected(arg0: ComponentName) {
+            isBound = false
         }
     }
 
-    private class PlayerEventListener(viewModel: PlayerViewModel) : MediaPlayer.EventListener {
-        private val owner = WeakReference(viewModel)
+    fun bindService(context: Context) {
+        Intent(context, MediaPlaybackService::class.java).also { intent ->
+            context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
+        }
+    }
 
-        override fun onEvent(event: MediaPlayer.Event) {
-            val player = owner.get() ?: return
-            when (event.type) {
-                MediaPlayer.Event.LengthChanged -> {
-                    player._duration.value = event.lengthChanged
-                }
-            }
+    fun unbindService(context: Context) {
+        if (isBound) {
+            context.unbindService(connection)
+            isBound = false
         }
     }
 
     fun selectSubtitleTrack(track: MediaPlayer.TrackDescription) {
-        _mediaPlayer.value?.setSpuTrack(track.id)
-        _selectedSubtitleTrack.value = track
+        // TODO: call service
     }
 
     fun selectAudioTrack(track: MediaPlayer.TrackDescription) {
-        _mediaPlayer.value?.setAudioTrack(track.id)
-        _selectedAudioTrack.value = track
+        // TODO: call service
     }
 
     fun togglePlayPause() {
-        _mediaPlayer.value?.let { player ->
-            if (player.isPlaying) {
-                player.pause()
-                _isPlaying.value = false
-            } else {
-                player.play()
-                _isPlaying.value = true
-            }
-        }
+        // TODO: call service
     }
 
     fun seek(value: Long) {
-        _mediaPlayer.value?.time = value
+        // TODO: call service
     }
 
     fun seekTo(value: Long) {
-        _mediaPlayer.value?.let { player ->
-            val newTime = player.time + value
-            player.time = newTime.coerceIn(0, player.length)
-        }
+        // TODO: call service
     }
 
     fun forward() {
@@ -133,19 +106,11 @@ class PlayerViewModel(
     }
 
     fun changeVolume(value: Int) {
-        _mediaPlayer.value?.let { player ->
-            val newVolume = player.volume + value
-            player.volume = newVolume.coerceIn(0, 100)
-        }
+        // TODO: call service
     }
 
     fun changePlaybackRate() {
-        _mediaPlayer.value?.let { player ->
-            val currentIndex = availablePlaybackRates.indexOf(_playbackRate.value)
-            val nextIndex = (currentIndex + 1) % availablePlaybackRates.size
-            _playbackRate.value = availablePlaybackRates[nextIndex]
-            player.rate = _playbackRate.value
-        }
+        // TODO: call service
     }
 
     fun toggleAudioOnly() {
@@ -161,14 +126,5 @@ class PlayerViewModel(
         brightness += change
         layoutParams.screenBrightness = brightness.coerceIn(0f, 1f)
         activity.window.attributes = layoutParams
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        _mediaPlayer.value?.stop()
-        _mediaPlayer.value?.release()
-        if (this::libVLC.isInitialized) {
-            libVLC.release()
-        }
     }
 }

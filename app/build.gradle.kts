@@ -193,6 +193,7 @@ dependencies {
     implementation(libs.mmkv)
 
     implementation(libs.vlc)
+    implementation(libs.androidx.media)
 
     testImplementation(libs.junit4)
     testImplementation(libs.mockitoKotlin)

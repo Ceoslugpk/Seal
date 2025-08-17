@@ -1,6 +1,7 @@
 [versions]
 accompanist = "0.34.0"
 androidGradlePlugin = "8.11.1"
+androidxMedia = "1.7.0"
 androidxComposeBom = "2025.03.01"
 androidxCore = "1.15.0"
 androidMaterial = "1.12.0"
@@ -118,6 +119,7 @@ vlc = { group = "org.videolan.android", name = "libvlc-all", version.ref = "vlc"
 mockitoKotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockito" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 
+androidx-media = { group = "androidx.media", name = "media", version.ref = "androidxMedia" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
