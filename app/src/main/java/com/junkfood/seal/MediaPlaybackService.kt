@@ -13,6 +13,10 @@ import android.os.Build
 import android.os.IBinder
 import android.support.v4.media.session.MediaSessionCompat
 import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.videolan.libvlc.LibVLC
 import org.videolan.libvlc.Media
 import org.videolan.libvlc.MediaPlayer
@@ -28,6 +32,7 @@ class MediaPlaybackService : Service() {
     private lateinit var audioFocusChangeListener: AudioFocusChangeListener
 
     private val binder = LocalBinder()
+    private val serviceScope = CoroutineScope(Dispatchers.IO)
 
     inner class LocalBinder : Binder() {
         fun getService(): MediaPlaybackService = this@MediaPlaybackService
@@ -46,15 +51,17 @@ class MediaPlaybackService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val videoPath = intent?.getStringExtra("video_path")
-        val audioPath = intent?.getStringExtra("audio_path")
-        val path = videoPath ?: audioPath
-        path?.let {
-            val media = Media(libVLC, Uri.fromFile(File(it)))
-            mediaPlayer.media = media
-            media.release()
-            mediaPlayer.play()
-            requestAudioFocus()
+        serviceScope.launch {
+            val videoPath = intent?.getStringExtra("video_path")
+            val audioPath = intent?.getStringExtra("audio_path")
+            val path = videoPath ?: audioPath
+            path?.let {
+                val media = Media(libVLC, Uri.fromFile(File(it)))
+                mediaPlayer.media = media
+                media.release()
+                mediaPlayer.play()
+                requestAudioFocus()
+            }
         }
 
         startForeground(1, buildNotification())
@@ -71,6 +78,7 @@ class MediaPlaybackService : Service() {
         libVLC.release()
         mediaSession.release()
         abandonAudioFocus()
+        serviceScope.cancel()
     }
 
     private fun createNotificationChannel() {
