@@ -26,7 +26,7 @@ class PlayerViewModel() : ViewModel() {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
             val binder = service as MediaPlaybackService.LocalBinder
             mediaPlaybackService = binder.getService()
-            _exoPlayer.value = mediaPlaybackService?.exoPlayer
+            _exoPlayer.value = mediaPlaybackService?.player
             isBound = true
         }
 
