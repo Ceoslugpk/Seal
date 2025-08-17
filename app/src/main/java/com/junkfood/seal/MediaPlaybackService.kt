@@ -8,10 +8,10 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.net.Uri
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.support.v4.media.session.MediaSessionCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.media3.common.C
@@ -19,7 +19,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.audio.AudioAttributes
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.session.MediaSession
+import androidx.media3.ext.mediasession.MediaSessionConnector
 import androidx.media3.ui.PlayerNotificationManager
 import coil.imageLoader
 import coil.request.ImageRequest
@@ -30,7 +30,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
 class MediaPlaybackService : Service() {
 
@@ -42,7 +41,8 @@ class MediaPlaybackService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     lateinit var player: ExoPlayer
     private var pnManager: PlayerNotificationManager? = null
-    private lateinit var mediaSession: MediaSession
+    private lateinit var mediaSession: MediaSessionCompat
+    private lateinit var connector: MediaSessionConnector
     private var started = false
 
     private val binder = LocalBinder()
@@ -71,7 +71,8 @@ class MediaPlaybackService : Service() {
             })
         }
 
-        mediaSession = MediaSession.Builder(this, player).build()
+        mediaSession = MediaSessionCompat(this, "PlaybackService").apply { isActive = true }
+        connector = MediaSessionConnector(mediaSession).apply { setPlayer(player) }
 
         pnManager = PlayerNotificationManager.Builder(this, NOTIF_ID, CHANNEL_ID)
             .setMediaDescriptionAdapter(object : PlayerNotificationManager.MediaDescriptionAdapter {
@@ -132,6 +133,8 @@ class MediaPlaybackService : Service() {
 
     override fun onDestroy() {
         pnManager?.setPlayer(null)
+        connector.setPlayer(null)
+        mediaSession.isActive = false
         mediaSession.release()
         player.release()
         scope.cancel()
