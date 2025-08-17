@@ -114,7 +114,8 @@ class PlayerViewModelTest {
         viewModel.initializePlayer(context, "fake_path")
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val track = MediaPlayer.TrackDescription(1, 0, "English")
+        val track: MediaPlayer.TrackDescription = mock()
+        whenever(track.id).thenReturn(1)
         viewModel.selectSubtitleTrack(track)
         verify(mediaPlayer).setSpuTrack(1)
         assertEquals(track, viewModel.selectedSubtitleTrack.value)
@@ -125,7 +126,8 @@ class PlayerViewModelTest {
         viewModel.initializePlayer(context, "fake_path")
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val track = MediaPlayer.TrackDescription(1, 0, "English")
+        val track: MediaPlayer.TrackDescription = mock()
+        whenever(track.id).thenReturn(1)
         viewModel.selectAudioTrack(track)
         verify(mediaPlayer).setAudioTrack(1)
         assertEquals(track, viewModel.selectedAudioTrack.value)
