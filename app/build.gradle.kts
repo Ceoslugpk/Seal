@@ -69,7 +69,10 @@ android {
     }
 
     room { schemaDirectory("$projectDir/schemas") }
-    ksp { arg("room.incremental", "true") }
+    ksp {
+        arg("room.incremental", "true")
+        arg("KOIN_DEFAULT_MODULE", "true")
+    }
 
     androidComponents {
         onVariants { variant ->
