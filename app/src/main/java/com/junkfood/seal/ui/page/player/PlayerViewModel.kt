@@ -14,6 +14,7 @@ import org.videolan.libvlc.LibVLC
 import org.videolan.libvlc.Media
 import org.videolan.libvlc.MediaPlayer
 import java.io.File
+import java.lang.ref.WeakReference
 
 class PlayerViewModel(
     private val mediaPlayerFactory: (LibVLC) -> MediaPlayer = { MediaPlayer(it) }
@@ -58,20 +59,29 @@ class PlayerViewModel(
         viewModelScope.launch {
             libVLC = LibVLC(context, ArrayList<String>().apply { add("--no-stats") })
             val player = mediaPlayerFactory(libVLC)
+            player.setEventListener(PlayerEventListener(this))
             val media = Media(libVLC, Uri.fromFile(File(videoPath)))
             player.media = media
             media.release()
             _mediaPlayer.value = player
             player.play()
-            _duration.value = player.length
-            _subtitleTracks.value = player.spuTracks?.toList() ?: emptyList()
-            _selectedSubtitleTrack.value = player.spuTracks?.firstOrNull { it.id == player.spuTrack }
-            _audioTracks.value = player.audioTracks?.toList() ?: emptyList()
-            _selectedAudioTrack.value = player.audioTracks?.firstOrNull { it.id == player.audioTrack }
             viewModelScope.launch {
                 while (true) {
                     _currentTime.value = player.time
                     delay(100)
+                }
+            }
+        }
+    }
+
+    private class PlayerEventListener(viewModel: PlayerViewModel) : MediaPlayer.EventListener {
+        private val owner = WeakReference(viewModel)
+
+        override fun onEvent(event: MediaPlayer.Event) {
+            val player = owner.get() ?: return
+            when (event.type) {
+                MediaPlayer.Event.LengthChanged -> {
+                    player._duration.value = event.lengthChanged
                 }
             }
         }
