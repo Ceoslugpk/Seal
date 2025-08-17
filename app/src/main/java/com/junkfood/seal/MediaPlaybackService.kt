@@ -13,10 +13,8 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
-import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -41,9 +39,7 @@ class MediaPlaybackService : Service() {
     override fun onCreate() {
         super.onCreate()
         exoPlayer = ExoPlayer.Builder(this).build()
-        mediaSession = MediaSession.Builder(this, exoPlayer)
-            .setCallback(MediaSessionCallback())
-            .build()
+        mediaSession = MediaSession.Builder(this, exoPlayer).build()
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         audioFocusChangeListener = AudioFocusChangeListener(exoPlayer)
@@ -117,23 +113,5 @@ class MediaPlaybackService : Service() {
 
     fun abandonAudioFocus() {
         audioManager.abandonAudioFocus(audioFocusChangeListener)
-    }
-
-    private inner class MediaSessionCallback : MediaSession.Callback {
-        override fun onPlayerCommand(
-            session: MediaSession,
-            controller: MediaSession.ControllerInfo,
-            playerCommand: Int,
-            extras: android.os.Bundle
-        ): ListenableFuture<MediaSession.ConnectionResult> {
-            if (playerCommand == Player.COMMAND_PLAY_PAUSE) {
-                if (exoPlayer.isPlaying) {
-                    exoPlayer.pause()
-                } else {
-                    exoPlayer.play()
-                }
-            }
-            return super.onPlayerCommand(session, controller, playerCommand, extras)
-        }
     }
 }
