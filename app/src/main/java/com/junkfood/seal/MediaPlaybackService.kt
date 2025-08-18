@@ -1,26 +1,22 @@
 package com.junkfood.seal
 
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import androidx.media3.common.C
-import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
+import org.videolan.libvlc.LibVLC
+import org.videolan.libvlc.Media
+import org.videolan.libvlc.MediaPlayer
 
 class MediaPlaybackService : Service() {
 
@@ -30,8 +26,9 @@ class MediaPlaybackService : Service() {
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    lateinit var player: ExoPlayer
-    private var started = false
+    private lateinit var libVLC: LibVLC
+    lateinit var player: MediaPlayer
+        private set
 
     private val binder = LocalBinder()
 
@@ -42,37 +39,31 @@ class MediaPlaybackService : Service() {
     override fun onCreate() {
         super.onCreate()
         ensureChannel()
-
         startForeground(NOTIF_ID, baseNotification("Preparing…"))
 
-        player = ExoPlayer.Builder(this).build().apply {
-            setHandleAudioBecomingNoisy(true)
-            addListener(object : Player.Listener {
-                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                    // Log error
-                }
-            })
-        }
+        libVLC = LibVLC(this, ArrayList<String>().apply {
+            add("--no-sub-autodetect-file")
+            add("--no-spu")
+        })
+        player = MediaPlayer(libVLC)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        intent?.getStringExtra("video_path")?.let { uriStr ->
-            player.setMediaItem(MediaItem.fromUri(uriStr))
-            player.prepare()
-            player.playWhenReady = true
-        }
-        intent?.getStringExtra("audio_path")?.let { uriStr ->
-            player.setMediaItem(MediaItem.fromUri(uriStr))
-            player.prepare()
-            player.playWhenReady = true
+        val path = intent?.getStringExtra("video_path") ?: intent?.getStringExtra("audio_path")
+        if (path != null) {
+            val media = Media(libVLC, Uri.parse(path))
+            player.media = media
+            media.release()
+            player.play()
         }
         return START_STICKY
     }
 
     override fun onDestroy() {
-        player.release()
-        scope.cancel()
         super.onDestroy()
+        player.release()
+        libVLC.release()
+        scope.cancel()
     }
 
     override fun onBind(intent: Intent?) = binder

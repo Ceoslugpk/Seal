@@ -44,7 +44,10 @@ ktfmt = "0.20.1"
 mockito = "5.4.0"
 turbine = "0.13.0"
 
+vlc = "3.5.4"
+
 [libraries]
+vlc-all = { group = "org.videolan.android", name = "libvlc-all", version.ref = "vlc" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCore" }
 android-material = { group = "com.google.android.material", name = "material", version.ref = "androidMaterial" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidxAppCompat" }

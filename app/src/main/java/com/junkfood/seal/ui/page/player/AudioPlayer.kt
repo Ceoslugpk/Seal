@@ -1,24 +1,15 @@
 package com.junkfood.seal.ui.page.player
 
 import android.content.Intent
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Audiotrack
-import androidx.compose.material.icons.filled.FastForward
-import androidx.compose.material.icons.filled.FastRewind
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -34,7 +25,6 @@ import com.junkfood.seal.MediaPlaybackService
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.component.BackButton
 import org.koin.androidx.compose.koinViewModel
-import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +34,7 @@ fun AudioPlayer(
     viewModel: PlayerViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
-    val exoPlayer by viewModel.exoPlayer.collectAsState()
+    val player by viewModel.player.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.bindService(context)
@@ -57,6 +47,7 @@ fun AudioPlayer(
     DisposableEffect(Unit) {
         onDispose {
             viewModel.unbindService(context)
+            player?.stop()
         }
     }
 
@@ -81,63 +72,7 @@ fun AudioPlayer(
                     modifier = Modifier.fillMaxSize(0.5f)
                 )
             }
-            Column {
-                Row {
-                    exoPlayer?.let {
-                        val duration = it.duration
-                        val position = it.currentPosition
-                        Text(text = position.formatDuration())
-                        Slider(
-                            value = position.toFloat(),
-                            onValueChange = { newPosition -> it.seekTo(newPosition.toLong()) },
-                            valueRange = 0f..duration.toFloat(),
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(text = duration.formatDuration())
-                    }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { exoPlayer?.seekBack() }) {
-                        Icon(
-                            imageVector = Icons.Default.FastRewind,
-                            contentDescription = "Rewind"
-                        )
-                    }
-                    IconButton(onClick = {
-                        exoPlayer?.let {
-                            if (it.isPlaying) {
-                                it.pause()
-                            } else {
-                                it.play()
-                            }
-                        }
-                    }) {
-                        Icon(
-                            imageVector = if (exoPlayer?.isPlaying == true) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = "Play/Pause"
-                        )
-                    }
-                    IconButton(onClick = { exoPlayer?.seekForward() }) {
-                        Icon(
-                            imageVector = Icons.Default.FastForward,
-                            contentDescription = "Forward"
-                        )
-                    }
-                }
-            }
+            PlayerControls(viewModel = viewModel)
         }
     }
-}
-
-private fun Long.formatDuration(): String {
-    return String.format(
-        "%02d:%02d",
-        TimeUnit.MILLISECONDS.toMinutes(this),
-        TimeUnit.MILLISECONDS.toSeconds(this) -
-                TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(this))
-    )
 }
